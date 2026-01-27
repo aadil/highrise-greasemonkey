@@ -32,32 +32,32 @@
 
 ## DAY-BY-DAY BREAKDOWN
 
-### Day 1 - Wednesday, April 30
+### Day 1 - Thursday, April 30
 - **Morning:** Arrive Nairobi JKIA at 10:30 (Kenya Airways from Mumbai, departed 06:45)
 - **Transfer:** JKIA → Novotel Nairobi Westlands
 - **Evening:** Rest, explore Westlands area
 - **Stay:** Novotel Nairobi Westlands
 
-### Days 2-4 - Thursday May 1 to Sunday May 4
+### Days 2-4 - Friday May 1 to Monday May 4
 - **May 1 Morning:** Drive Nairobi → Fairmont Mount Kenya Safari Club (~3.5 hours via Thika Superhighway)
 - **En route:** Stop at Equator marker for photos
 - **Activities:** Horse riding, golf, nature walks, fishing, kids activities, animal orphanage
 - **Stay:** Fairmont Mount Kenya Safari Club (3 nights: May 1, 2, 3)
 
-### Days 5-7 - Sunday May 4 to Wednesday May 7
+### Days 5-7 - Monday May 4 to Thursday May 7
 - **May 4 Morning:** Transfer to Nanyuki Airstrip (15 min from hotel)
 - **Flight:** Nanyuki → Mara North Airstrip (Safarilink, ~2 hours)
 - **Activities:** Morning and evening game drives, Big 5 viewing
 - **Stay:** Fairmont Mara Safari Club (3 nights: May 4, 5, 6)
 
-### Days 8-9 - Wednesday May 7 to Friday May 9
+### Days 8-9 - Thursday May 7 to Saturday May 9
 - **May 7 Morning:** Optional final morning game drive
 - **May 7 Afternoon:** Fly Mara North → Wilson Airport, Nairobi
 - **Transfer:** Wilson Airport → Novotel Nairobi Westlands
 - **May 8:** Sightseeing day - options include Lake Naivasha day trip
 - **Stay:** Novotel Nairobi Westlands (2 nights: May 7, 8)
 
-### Day 10 - Friday, May 9
+### Day 10 - Saturday, May 9
 - **Transfer:** Novotel Nairobi Westlands → JKIA
 - **Flight:** Nairobi → Mumbai, Kenya Airways departing 16:45, arriving 01:30 (+1)
 
@@ -69,15 +69,15 @@
 
 | Route | Airline | Date | Time |
 |-------|---------|------|------|
-| Mumbai → Nairobi | Kenya Airways | Wed, Apr 30 | 06:45 → 10:30 |
-| Nairobi → Mumbai | Kenya Airways | Fri, May 9 | 16:45 → 01:30 (+1) |
+| Mumbai → Nairobi | Kenya Airways | Thu, Apr 30 | 06:45 → 10:30 |
+| Nairobi → Mumbai | Kenya Airways | Sat, May 9 | 16:45 → 01:30 (+1) |
 
 ### Internal (To Book)
 
 | Route | Date | Approx Time | Airstrip |
 |-------|------|-------------|----------|
-| Nanyuki → Mara North | Sun, May 4 | Morning (~09:10) | Safarilink |
-| Mara North → Wilson | Wed, May 7 | Afternoon | Safarilink/AirKenya |
+| Nanyuki → Mara North | Mon, May 4 | Morning (~09:10) | Safarilink |
+| Mara North → Wilson | Thu, May 7 | Afternoon | Safarilink/AirKenya |
 
 **Note:** Luggage limit on safari flights is 15 kg soft bags only.
 
