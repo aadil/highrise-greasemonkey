@@ -10,8 +10,7 @@
 | Family | People | Flying From |
 |--------|--------|-------------|
 | Aadil's Family | 4 (2 adults, 2 kids) | Mumbai |
-| Zohaib's Family | 4 | Bangalore (Qatar/Emirates) |
-| Bilal's Family | TBD | TBD |
+| Zohaib's Family | 4 | Bangalore |
 | **Total** | **8 guests** | |
 
 ---
@@ -65,12 +64,21 @@
 
 ## FLIGHTS
 
-### International (Aadil - Confirmed)
+### Aadil's Family (Confirmed)
 
 | Route | Airline | Date | Time |
 |-------|---------|------|------|
 | Mumbai → Nairobi | Kenya Airways | Thu, Apr 30 | 06:45 → 10:30 |
 | Nairobi → Mumbai | Kenya Airways | Sat, May 9 | 16:45 → 01:30 (+1) |
+
+### Zohaib's Family (Confirmed)
+
+| Route | Airline | Flight | Date | Time |
+|-------|---------|--------|------|------|
+| Bangalore → Doha | Qatar Airways | QR-573 | Thu, Apr 30 | 04:00 → 05:50 |
+| Doha → Nairobi | Qatar Airways | QR-1345 | Thu, Apr 30 | 09:30 → 14:40 |
+| Nairobi → Doha | Qatar Airways | QR-1346 | Sat, May 9 | 10:25 → 15:35 |
+| Doha → Bangalore | Qatar Airways | QR-572 | Sat, May 9 | 19:35 → 02:30 (+1) |
 
 ### Internal (To Book)
 
@@ -136,6 +144,7 @@ With a full day in Nairobi, here are recommended activities:
 
 ### Bookings
 - [x] International flights (Aadil)
+- [x] International flights (Zohaib)
 - [x] Fairmont Mount Kenya Safari Club
 - [x] Fairmont Mara Safari Club
 - [ ] Internal flights (Nanyuki → Mara, Mara → Wilson)
