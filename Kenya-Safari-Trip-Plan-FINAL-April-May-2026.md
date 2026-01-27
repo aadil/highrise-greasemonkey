@@ -20,10 +20,10 @@
 
 | Date | Location | Accommodation | Nights |
 |------|----------|---------------|--------|
-| Apr 30 | Arrive Nairobi | Noot El Nairobi Westlands | 1 |
+| Apr 30 | Arrive Nairobi | Novotel Nairobi Westlands | 1 |
 | May 1-4 | Mount Kenya | Fairmont Mount Kenya Safari Club | 3 |
 | May 4-7 | Masai Mara | Fairmont Mara Safari Club | 3 |
-| May 7-9 | Nairobi | Noot El Nairobi Westlands | 2 |
+| May 7-9 | Nairobi | Novotel Nairobi Westlands | 2 |
 | May 9 | Fly home | - | - |
 
 **Total: 9 nights** (3 Nairobi + 3 Mount Kenya + 3 Mara)
@@ -34,9 +34,9 @@
 
 ### Day 1 - Wednesday, April 30
 - **Morning:** Arrive Nairobi JKIA at 10:30 (Kenya Airways from Mumbai, departed 06:45)
-- **Transfer:** JKIA → Noot El Nairobi Westlands
+- **Transfer:** JKIA → Novotel Nairobi Westlands
 - **Evening:** Rest, explore Westlands area
-- **Stay:** Noot El Nairobi Westlands
+- **Stay:** Novotel Nairobi Westlands
 
 ### Days 2-4 - Thursday May 1 to Sunday May 4
 - **May 1 Morning:** Drive Nairobi → Fairmont Mount Kenya Safari Club (~3.5 hours via Thika Superhighway)
@@ -53,12 +53,12 @@
 ### Days 8-9 - Wednesday May 7 to Friday May 9
 - **May 7 Morning:** Optional final morning game drive
 - **May 7 Afternoon:** Fly Mara North → Wilson Airport, Nairobi
-- **Transfer:** Wilson Airport → Noot El Nairobi Westlands
+- **Transfer:** Wilson Airport → Novotel Nairobi Westlands
 - **May 8:** Sightseeing day - options include Lake Naivasha day trip
-- **Stay:** Noot El Nairobi Westlands (2 nights: May 7, 8)
+- **Stay:** Novotel Nairobi Westlands (2 nights: May 7, 8)
 
 ### Day 10 - Friday, May 9
-- **Transfer:** Noot El Nairobi Westlands → JKIA
+- **Transfer:** Novotel Nairobi Westlands → JKIA
 - **Flight:** Nairobi → Mumbai, Kenya Airways departing 16:45, arriving 01:30 (+1)
 
 ---
@@ -87,10 +87,10 @@
 
 | Property | Dates | Nights | Status |
 |----------|-------|--------|--------|
-| Noot El Nairobi Westlands | Apr 30 - May 1 | 1 | To confirm |
+| Novotel Nairobi Westlands | Apr 30 - May 1 | 1 | To confirm |
 | Fairmont Mount Kenya Safari Club | May 1-4 | 3 | Booked |
 | Fairmont Mara Safari Club | May 4-7 | 3 | Booked |
-| Noot El Nairobi Westlands | May 7-9 | 2 | To confirm |
+| Novotel Nairobi Westlands | May 7-9 | 2 | To confirm |
 
 ---
 
@@ -98,11 +98,11 @@
 
 | Date | Route | Duration | Notes |
 |------|-------|----------|-------|
-| Apr 30 | JKIA → Noot El Westlands | ~45 min | Arrange pickup |
-| May 1 | Noot El Westlands → Fairmont Mount Kenya | ~3.5 hrs | Excellent road |
+| Apr 30 | JKIA → Novotel Westlands | ~45 min | Arrange pickup |
+| May 1 | Novotel Westlands → Fairmont Mount Kenya | ~3.5 hrs | Excellent road |
 | May 4 | Fairmont Mount Kenya → Nanyuki Airstrip | ~15 min | Hotel can arrange |
-| May 7 | Wilson Airport → Noot El Westlands | ~30 min | Depending on traffic |
-| May 9 | Noot El Westlands → JKIA | ~45 min | Allow extra time |
+| May 7 | Wilson Airport → Novotel Westlands | ~30 min | Depending on traffic |
+| May 9 | Novotel Westlands → JKIA | ~45 min | Allow extra time |
 
 ---
 
@@ -139,7 +139,7 @@ With a full day in Nairobi, here are recommended activities:
 - [x] Fairmont Mount Kenya Safari Club
 - [x] Fairmont Mara Safari Club
 - [ ] Internal flights (Nanyuki → Mara, Mara → Wilson)
-- [ ] Noot El Nairobi Westlands (Apr 30 + May 7-8)
+- [ ] Novotel Nairobi Westlands (Apr 30 + May 7-8)
 - [ ] Ground transfers
 - [ ] May 8 activities (Naivasha/Nairobi sightseeing)
 
