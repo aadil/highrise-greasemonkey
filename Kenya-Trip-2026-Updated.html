@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kenya Safari Trip - April/May 2026</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #d4a574 0%, #c4956a 50%, #b8860b 100%);
+            border-radius: 20px 20px 0 0;
+            padding: 40px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='50' font-size='50'%3E🦁%3C/text%3E%3C/svg%3E") no-repeat right 20px center;
+            background-size: 80px;
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .header .dates {
+            font-size: 1.3em;
+            opacity: 0.95;
+            position: relative;
+        }
+
+        .header .subtitle {
+            margin-top: 15px;
+            font-size: 1em;
+            opacity: 0.9;
+            position: relative;
+        }
+
+        .content {
+            background: white;
+            border-radius: 0 0 20px 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .section {
+            margin-bottom: 35px;
+        }
+
+        .section-title {
+            font-size: 1.4em;
+            color: #b8860b;
+            border-bottom: 3px solid #d4a574;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .travelers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .traveler-card {
+            background: linear-gradient(135deg, #f8f4e8 0%, #f5efe0 100%);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border-left: 4px solid #d4a574;
+        }
+
+        .traveler-card.pending {
+            border-left-color: #f0c040;
+            background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
+        }
+
+        .traveler-card h3 {
+            color: #8b6914;
+            margin-bottom: 5px;
+        }
+
+        .traveler-card p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .traveler-card .status {
+            margin-top: 8px;
+            font-size: 0.8em;
+            padding: 3px 10px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        .traveler-card .status.confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .traveler-card .status.awaiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .itinerary-timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .itinerary-timeline::before {
+            content: "";
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, #d4a574, #b8860b);
+            border-radius: 3px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #faf8f3;
+            border-radius: 12px;
+            border: 1px solid #e8e0d0;
+        }
+
+        .timeline-item::before {
+            content: "";
+            position: absolute;
+            left: -26px;
+            top: 25px;
+            width: 14px;
+            height: 14px;
+            background: #d4a574;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px #d4a574;
+        }
+
+        .timeline-date {
+            font-weight: bold;
+            color: #b8860b;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .timeline-location {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .timeline-details {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .timeline-nights {
+            display: inline-block;
+            background: #d4a574;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        .flights-table, .transfers-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .flights-table th, .transfers-table th {
+            background: linear-gradient(135deg, #d4a574 0%, #c4956a 100%);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .flights-table th:first-child, .transfers-table th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+
+        .flights-table th:last-child, .transfers-table th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+        .flights-table td, .transfers-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e8e0d0;
+        }
+
+        .flights-table tr:nth-child(even), .transfers-table tr:nth-child(even) {
+            background: #faf8f3;
+        }
+
+        .flights-table tr:last-child td:first-child, .transfers-table tr:last-child td:first-child {
+            border-radius: 0 0 0 8px;
+        }
+
+        .flights-table tr:last-child td:last-child, .transfers-table tr:last-child td:last-child {
+            border-radius: 0 0 8px 0;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
+            border-left: 4px solid #f0c040;
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 15px 0;
+        }
+
+        .info-box.success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-left-color: #28a745;
+        }
+
+        .info-box.warning {
+            background: linear-gradient(135deg, #ffe6e6 0%, #ffd6d6 100%);
+            border-left-color: #e74c3c;
+        }
+
+        .checklist {
+            list-style: none;
+        }
+
+        .checklist li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checklist li::before {
+            content: "☐";
+            font-size: 1.2em;
+            color: #d4a574;
+        }
+
+        .checklist li.done::before {
+            content: "☑";
+            color: #28a745;
+        }
+
+        .sightseeing-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .option-card {
+            background: #faf8f3;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e8e0d0;
+            transition: all 0.3s ease;
+        }
+
+        .option-card:hover {
+            border-color: #d4a574;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .option-card h4 {
+            color: #b8860b;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .option-card ul {
+            margin-left: 20px;
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.8;
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, #d4a574 0%, #b8860b 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .summary-box h2 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .hotel-card {
+            background: #faf8f3;
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #d4a574;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .hotel-card h4 {
+            color: #333;
+            margin: 0;
+        }
+
+        .hotel-card .dates {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .hotel-card .nights {
+            background: #d4a574;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e8e0d0;
+            color: #888;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                max-width: 100%;
+            }
+            .timeline-item, .option-card {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Kenya Safari Adventure</h1>
+            <div class="dates">April 30 - May 9, 2026</div>
+            <div class="subtitle">Mount Kenya | Masai Mara | Nairobi</div>
+        </div>
+
+        <div class="content">
+            <div class="summary-box">
+                <h2>Trip At A Glance</h2>
+                <div class="summary-stats">
+                    <div class="stat">
+                        <div class="stat-number">9</div>
+                        <div class="stat-label">Nights</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">Families</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">Destinations</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">The Travelers</h2>
+                <div class="travelers-grid">
+                    <div class="traveler-card">
+                        <h3>Aadil's Family</h3>
+                        <p>4 people (2 adults, 2 kids)</p>
+                        <p>Flying from Mumbai</p>
+                        <span class="status confirmed">Confirmed</span>
+                    </div>
+                    <div class="traveler-card">
+                        <h3>Zohaib's Family</h3>
+                        <p>4 people</p>
+                        <p>Flying from Bangalore</p>
+                        <span class="status confirmed">Confirmed</span>
+                    </div>
+                    <div class="traveler-card pending">
+                        <h3>Bilal's Family</h3>
+                        <p>Details to be shared</p>
+                        <p>Will update when confirmed</p>
+                        <span class="status awaiting">Awaiting Confirmation</span>
+                    </div>
+                </div>
+                <div class="info-box" style="margin-top: 20px;">
+                    <strong>Note:</strong> This trip is planned for 3 families. Bilal's family details will be added to this plan as soon as he confirms. We're excited to have everyone join!
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Accommodation (All Booked)</h2>
+                <div class="hotel-card">
+                    <div>
+                        <h4>Novotel Nairobi Westlands</h4>
+                        <div class="dates">Thu, Apr 30 - Fri, May 1, 2026</div>
+                    </div>
+                    <span class="nights">1 Night</span>
+                </div>
+                <div class="hotel-card">
+                    <div>
+                        <h4>Fairmont Mount Kenya Safari Club</h4>
+                        <div class="dates">Fri, May 1 - Mon, May 4, 2026</div>
+                    </div>
+                    <span class="nights">3 Nights</span>
+                </div>
+                <div class="hotel-card">
+                    <div>
+                        <h4>Fairmont Mara Safari Club</h4>
+                        <div class="dates">Mon, May 4 - Thu, May 7, 2026</div>
+                    </div>
+                    <span class="nights">3 Nights</span>
+                </div>
+                <div class="hotel-card">
+                    <div>
+                        <h4>Novotel Nairobi Westlands</h4>
+                        <div class="dates">Thu, May 7 - Sat, May 9, 2026</div>
+                    </div>
+                    <span class="nights">2 Nights</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Day-by-Day Itinerary</h2>
+                <div class="itinerary-timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-date">Thursday, April 30</div>
+                        <div class="timeline-location">Arrive Nairobi</div>
+                        <div class="timeline-details">
+                            <strong>Aadil's family:</strong> Arrive JKIA at 10:30 AM, pickup at 10:30 AM<br>
+                            <strong>Zohaib's family:</strong> Arrive JKIA at 14:40, pickup at 14:40<br>
+                            Transfer to Novotel, rest and explore Westlands area
+                        </div>
+                        <span class="timeline-nights">1 Night - Novotel Nairobi Westlands</span>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-date">May 1 - 4 (Fri - Mon)</div>
+                        <div class="timeline-location">Fairmont Mount Kenya Safari Club</div>
+                        <div class="timeline-details">
+                            <strong>Pickup:</strong> 09:00 AM from Novotel<br>
+                            Drive to Mount Kenya (~3.5 hours via Thika Superhighway)<br>
+                            Stop at Equator marker for photos<br>
+                            Activities: Horse riding, golf, nature walks, fishing, animal orphanage
+                        </div>
+                        <span class="timeline-nights">3 Nights</span>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-date">May 4 - 7 (Mon - Thu)</div>
+                        <div class="timeline-location">Fairmont Mara Safari Club</div>
+                        <div class="timeline-details">
+                            <strong>Pickup:</strong> 07:45 AM from Mount Kenya<br>
+                            Scenic drive to Masai Mara<br>
+                            Morning and evening game drives<br>
+                            Big 5 wildlife viewing: Lion, Leopard, Elephant, Buffalo, Rhino
+                        </div>
+                        <span class="timeline-nights">3 Nights</span>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-date">May 7 - 9 (Thu - Sat)</div>
+                        <div class="timeline-location">Back to Nairobi</div>
+                        <div class="timeline-details">
+                            <strong>Pickup:</strong> 12:00 PM from Mara<br>
+                            Drive back to Nairobi<br>
+                            <strong>May 8:</strong> Full day for sightseeing (see options below)<br>
+                            <strong>May 9:</strong> Transfer to JKIA, fly home
+                        </div>
+                        <span class="timeline-nights">2 Nights - Novotel Nairobi Westlands</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Ground Transfers (All Booked)</h2>
+                <table class="transfers-table">
+                    <tr>
+                        <th>Trip</th>
+                        <th>Route</th>
+                        <th>Date</th>
+                        <th>Pickup Time</th>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>JKIA Airport → Novotel Nairobi</td>
+                        <td>Thu, Apr 30</td>
+                        <td>Aadil: 10:30 AM<br>Zohaib: 14:40</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Novotel → Fairmont Mount Kenya</td>
+                        <td>Fri, May 1</td>
+                        <td>09:00 AM</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Fairmont Mount Kenya → Fairmont Mara</td>
+                        <td>Mon, May 4</td>
+                        <td>07:45 AM</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>Fairmont Mara → Novotel Nairobi</td>
+                        <td>Thu, May 7</td>
+                        <td>12:00 PM</td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>Novotel → JKIA Airport</td>
+                        <td>Sat, May 9</td>
+                        <td>Zohaib: 07:00 AM<br>Aadil: 01:15 PM</td>
+                    </tr>
+                </table>
+                <div class="info-box success">
+                    <strong>Transfer Provider:</strong> Rarity Cars Kenya - All transfers booked with vouchers confirmed (Trip 4 voucher awaited).
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">International Flights</h2>
+                <h3 style="color: #666; margin-bottom: 15px; font-size: 1em;">Aadil's Family (Confirmed)</h3>
+                <table class="flights-table">
+                    <tr>
+                        <th>Route</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                    </tr>
+                    <tr>
+                        <td>Mumbai → Nairobi (Kenya Airways)</td>
+                        <td>Thu, Apr 30</td>
+                        <td>06:45 → 10:30</td>
+                    </tr>
+                    <tr>
+                        <td>Nairobi → Mumbai (Kenya Airways)</td>
+                        <td>Sat, May 9</td>
+                        <td>16:45 → 01:30 (+1)</td>
+                    </tr>
+                </table>
+
+                <h3 style="color: #666; margin: 25px 0 15px; font-size: 1em;">Zohaib's Family (Confirmed)</h3>
+                <table class="flights-table">
+                    <tr>
+                        <th>Route</th>
+                        <th>Flight</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                    </tr>
+                    <tr>
+                        <td>Bangalore → Doha (Qatar Airways)</td>
+                        <td>QR-573</td>
+                        <td>Thu, Apr 30</td>
+                        <td>04:00 → 05:50</td>
+                    </tr>
+                    <tr>
+                        <td>Doha → Nairobi (Qatar Airways)</td>
+                        <td>QR-1345</td>
+                        <td>Thu, Apr 30</td>
+                        <td>09:30 → 14:40</td>
+                    </tr>
+                    <tr>
+                        <td>Nairobi → Doha (Qatar Airways)</td>
+                        <td>QR-1346</td>
+                        <td>Sat, May 9</td>
+                        <td>10:25 → 15:35</td>
+                    </tr>
+                    <tr>
+                        <td>Doha → Bangalore (Qatar Airways)</td>
+                        <td>QR-572</td>
+                        <td>Sat, May 9</td>
+                        <td>19:35 → 02:30 (+1)</td>
+                    </tr>
+                </table>
+
+                <div class="info-box" style="margin-top: 20px;">
+                    <strong>Bilal's Family:</strong> Flight details will be added once confirmed.
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">May 8 - Sightseeing Options</h2>
+                <div class="sightseeing-options">
+                    <div class="option-card">
+                        <h4>Option A: Lake Naivasha</h4>
+                        <ul>
+                            <li>1.5-2 hour drive from Nairobi</li>
+                            <li>Boat ride (hippos, birds)</li>
+                            <li>Crescent Island walking safari</li>
+                            <li>Hell's Gate cycling</li>
+                        </ul>
+                    </div>
+                    <div class="option-card">
+                        <h4>Option B: Nairobi City</h4>
+                        <ul>
+                            <li>Elephant Orphanage (11am-12pm)</li>
+                            <li>Giraffe Centre (hand-feed!)</li>
+                            <li>Karen Blixen Museum</li>
+                            <li>Maasai Market shopping</li>
+                        </ul>
+                    </div>
+                    <div class="option-card">
+                        <h4>Option C: Nairobi National Park</h4>
+                        <ul>
+                            <li>Morning game drive</li>
+                            <li>Lions with city skyline!</li>
+                            <li>Half day activity</li>
+                            <li>Great for one more safari</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Everyone's Checklist</h2>
+                <ul class="checklist">
+                    <li class="done">Book international flights</li>
+                    <li class="done">Book hotels</li>
+                    <li class="done">Book ground transfers</li>
+                    <li>Apply for Kenya eVisa at evisa.go.ke ($51/person)</li>
+                    <li>Book travel insurance</li>
+                    <li>Decide May 8 sightseeing activity</li>
+                    <li>Bring neutral colored clothes (khaki, olive, brown)</li>
+                    <li>Warm layers for Mount Kenya (high altitude, cool evenings)</li>
+                    <li>Binoculars and camera with zoom lens</li>
+                    <li>Sunscreen and insect repellent</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Important Notes</h2>
+                <div class="info-box">
+                    <strong>Mount Kenya:</strong> Located at high altitude - expect cool evenings. Bring warm layers!
+                </div>
+                <div class="info-box">
+                    <strong>Safari Clothing:</strong> Wear neutral colors (khaki, green, brown). Avoid bright colors and white.
+                </div>
+                <div class="info-box">
+                    <strong>Kenya eVisa:</strong> Apply at evisa.go.ke - costs $51 per person. Apply at least 2 weeks before travel.
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>Safe travels! See you in Kenya!</p>
+                <p style="margin-top: 10px; font-size: 0.9em;">Last updated: February 6, 2026</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
