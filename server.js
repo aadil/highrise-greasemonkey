@@ -374,6 +374,11 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
+// Health check + keepalive endpoint (for free tier cron services)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', articles: db.getArticleCount(), uptime: process.uptime() });
+});
+
 // --- Scheduler ---
 // Convert minutes to cron expression
 function minutesToCron(minutes) {

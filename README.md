@@ -2,161 +2,128 @@
 
 A real-time news aggregation service for Indian credit card, points, and miles news. Built for **The Great Indian Points** channel to catch breaking news fast and create timely content.
 
-## What It Does
+Scans **69 sources** every 30 minutes: 43 Twitter/X accounts, 8 Reddit feeds, 12 Google News queries, 3 CC blogs, 3 finance news sites.
 
-- Scans **69 sources** every 30 minutes (configurable): 43 Twitter/X accounts, 8 Reddit feeds, 12 Google News queries, 3 CC blogs, 3 finance news sites
-- **Web dashboard** at `http://localhost:3000` to browse, search, and filter articles
-- **Gmail email alerts** when new articles are found
-- **SQLite database** for deduplication and history
-- **REST API** for programmatic access
+---
+
+## Deploy in 3 Steps (Get a Live URL)
+
+### Step 1: Fork this repo
+
+Click the **Fork** button on GitHub to copy it to your account.
+
+### Step 2: Deploy on Render.com (free)
+
+1. Go to [render.com](https://render.com) and sign up (free, use GitHub login)
+2. Click **New > Web Service**
+3. Connect your GitHub account and select this repo
+4. Render will auto-detect the settings. Just confirm:
+   - **Branch:** `claude/credit-card-news-alerts-fONOU`
+   - **Build Command:** `npm install`
+   - **Start Command:** `node server.js`
+5. Click **Create Web Service**
+
+Within 2-3 minutes you'll get a live URL like:
+```
+https://cc-news-india.onrender.com
+```
+
+Bookmark it. Open it anytime. Hit refresh for latest news.
+
+### Step 3: Keep it scanning 24/7 (important!)
+
+Render's free tier sleeps after 15 min of inactivity. To keep your scanner running:
+
+1. Go to [cron-job.org](https://cron-job.org) (free, sign up with email)
+2. Create a new cron job:
+   - **URL:** `https://YOUR-APP.onrender.com/api/scan`
+   - **Schedule:** Every 30 minutes
+3. Save. Done.
+
+This pings your app every 30 minutes, waking it up and triggering a fresh scan.
+
+---
+
+## Optional: Email Alerts to Gmail
+
+To get email notifications when new articles are found:
+
+1. Go to [Google App Passwords](https://myaccount.google.com/apppasswords)
+2. Generate an app password for "Mail"
+3. In Render dashboard, go to your service > **Environment** tab, add:
+   - `GMAIL_USER` = your-email@gmail.com
+   - `GMAIL_APP_PASSWORD` = your-16-char-app-password
+   - `ALERT_RECIPIENT` = your-email@gmail.com
+
+Without this, the dashboard still works -- you just won't get email alerts.
+
+---
+
+## Dashboard Features
+
+- Live news feed from 69 sources, newest first
+- **Search** by keyword (e.g. "HDFC Infinia", "lounge access")
+- **Filter buttons:** Credit Cards | Points & Miles | Twitter | Reddit | All
+- **Platform badges** on each card (Reddit / Twitter / News / Blog)
+- **Scan Now** button for instant refresh
+- **Source stats** and **scan history** in sidebar
+- **Auto-refreshes** every 5 minutes
+
+---
 
 ## News Sources
 
-### Twitter/X (43 accounts via xcancel.com RSS)
+### Twitter/X (43 accounts)
 
 **Your picks:** @CardsavvyIndia, @ProfessorCardz, @suritalreja, @EvryPaisaMatter, @LiveFromALounge, @CardMavenIn, @akshat_money, @imYadav31, @TechnoFino, @CreditPedia, @nikravel, @Boopathy_SA, @MagnifyClub, @credofly, @savesage_club, @DoBaniye, @spendwiselyx, @pointperkspicks, @asktarunn, @AmazingCreditC, @milesmintIN, @chandrarsrikant, @luxe_explorer
 
 **Additional influencers:** @AskTriMan, @cardinsider, @creditcardz_in, @credithelpindia, @CardExpert_in
 
-**Bank & institutional handles (keyword-filtered):** @SBICard_Connect, @HDFCBank, @ICICIBank, @AxisBank, @GetOneCardIN, @AmexIndia, @aubank, @IDFCFIRSTBank, @IndusInd_Bank, @YesBank, @KotakBankLtd, @RBLBankLtd, @FederalBankLtd, @RuPay_npci, @RBI
+**Bank handles (keyword-filtered):** @SBICard_Connect, @HDFCBank, @ICICIBank, @AxisBank, @GetOneCardIN, @AmexIndia, @aubank, @IDFCFIRSTBank, @IndusInd_Bank, @YesBank, @KotakBankLtd, @RBLBankLtd, @FederalBankLtd, @RuPay_npci, @RBI
 
 ### Reddit (8 feeds)
 
-| Source | Type |
-|--------|------|
-| r/CreditCardsIndia (new posts) | JSON API |
-| r/CreditCardIndia (new posts) | JSON API |
-| r/IndianCreditCards (new posts) | JSON API |
-| r/IndiaInvestments (keyword-filtered) | JSON API |
-| r/india (keyword-filtered) | JSON API |
-| Reddit Search: "credit card india" | JSON API |
-| Reddit Search: "HDFC credit card" | JSON API |
-| Reddit Search: "points miles india" | JSON API |
+r/CreditCardsIndia, r/CreditCardIndia, r/IndianCreditCards, r/IndiaInvestments (filtered), r/india (filtered), plus 3 search queries
 
-### Google News RSS (12 India-specific queries)
+### Google News (12 queries)
 
 Credit Card India, Rewards, New Launches, RBI Regulation, Amex, HDFC, SBI, ICICI, Axis Bank, Points & Miles, Loyalty Programs, Lounge Access
 
-### Blogs & Finance News
+### Blogs & Finance
 
-| Source | Type |
-|--------|------|
-| CardExpert.in | RSS |
-| LiveFromALounge.com | RSS |
-| CardInfo.in | RSS |
-| Moneycontrol (keyword-filtered) | RSS |
-| Economic Times - Banking (keyword-filtered) | RSS |
-| NDTV Profit (keyword-filtered) | RSS |
+CardExpert.in, LiveFromALounge.com, CardInfo.in, Moneycontrol, Economic Times, NDTV Profit
 
-General finance sources are keyword-filtered to only surface credit card / points / miles articles. See `sources.js` to add or modify sources.
+---
 
-## Quick Start
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Copy and configure environment
-cp .env.example .env
-# Edit .env with your Gmail credentials (see Email Setup below)
-
-# 3. Start the server (dashboard + scheduler)
-npm start
-
-# 4. Open the dashboard
-open http://localhost:3000
-```
-
-## Email Setup (Gmail)
-
-To receive email alerts:
-
-1. Go to [Google App Passwords](https://myaccount.google.com/apppasswords)
-2. Generate a new app password for "Mail"
-3. Add to your `.env`:
-
-```
-GMAIL_USER=your-email@gmail.com
-GMAIL_APP_PASSWORD=abcd-efgh-ijkl-mnop
-ALERT_RECIPIENT=your-email@gmail.com
-```
-
-Without email configured, the dashboard and scanner still work -- you just won't get email alerts.
-
-## Configuration (.env)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GMAIL_USER` | - | Your Gmail address |
-| `GMAIL_APP_PASSWORD` | - | Gmail App Password (16 chars) |
-| `ALERT_RECIPIENT` | Same as GMAIL_USER | Where to send alerts |
-| `SCAN_INTERVAL_MINUTES` | `30` | How often to scan |
-| `PORT` | `3000` | Dashboard port |
-
-## Usage
-
-### Dashboard
-
-Visit `http://localhost:3000` after starting. Features:
-- **Search** articles by keyword
-- **Filter** by category (Credit Cards, Points & Miles, All)
-- **Scan Now** button to trigger an immediate scan
-- **Source stats** and **scan history** in the sidebar
-- Auto-refreshes every 5 minutes
-
-### Manual Scan (CLI)
-
-```bash
-node scanner.js
-```
-
-### API Endpoints
+## API Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/articles?limit=50&offset=0&q=hdfc` | List/search articles |
-| `GET /api/scan` | Trigger scan, returns results as JSON |
+| `GET /api/articles?limit=50&q=hdfc` | Search/list articles as JSON |
+| `GET /api/scan` | Trigger scan |
 | `GET /api/stats` | Source stats and scan history |
+| `GET /health` | Health check |
 
-## Project Structure
+## Adding New Twitter Accounts
 
-```
-server.js     - Express server, dashboard, scheduler
-scanner.js    - RSS feed scanner
-emailer.js    - Gmail notification sender
-db.js         - SQLite database layer
-sources.js    - News source configuration + filter keywords
-.env.example  - Environment variable template
-```
-
-## Adding New Sources
-
-Edit `sources.js` to add RSS feeds:
+Edit `sources.js` and add:
 
 ```js
 {
-  name: 'My New Source',
+  name: 'Twitter - @handle',
   type: 'rss',
-  url: 'https://example.com/feed/',
-  category: 'credit-card',   // or 'points-miles' or 'finance'
-  filterKeywords: false,      // set true for general sources
+  url: 'https://xcancel.com/handle/rss',
+  category: 'credit-card',
 }
 ```
 
-## Running in Production
+Push to GitHub and Render will auto-redeploy.
 
-For always-on operation, use PM2 or systemd:
+## Local Development
 
 ```bash
-# With PM2
-npm install -g pm2
-pm2 start server.js --name cc-news
-pm2 save
-pm2 startup
-
-# Or with systemd, nohup, screen, etc.
+npm install
+cp .env.example .env
+npm start
+# Open http://localhost:3000
 ```
-
-## Keywords Monitored
-
-The filter catches articles mentioning: credit cards, reward points, loyalty programs, lounge access, specific Indian bank cards (HDFC, SBI, ICICI, Axis, Kotak, etc.), fintech cards (OneCard, Fi, Jupiter, Slice), programs (InterMiles, Club Vistara, Marriott Bonvoy), RBI regulations, UPI credit, and more. Full list in `sources.js`.

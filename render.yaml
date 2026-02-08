@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: cc-news-india
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SCAN_INTERVAL_MINUTES
+        value: "30"
+      - key: PORT
+        value: "3000"
+      # Optional: set these in Render dashboard for email alerts
+      # - key: GMAIL_USER
+      #   value: your-email@gmail.com
+      # - key: GMAIL_APP_PASSWORD
+      #   value: your-app-password
+      # - key: ALERT_RECIPIENT
+      #   value: your-email@gmail.com
