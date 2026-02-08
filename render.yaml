@@ -1,10 +1,9 @@
 services:
   - type: web
-    name: cc-news-india
-    runtime: node
+    name: highrise-greasemonkey
+    runtime: docker
     plan: free
-    buildCommand: npm install
-    startCommand: node server.js
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: NODE_ENV
         value: production
