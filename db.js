@@ -44,6 +44,20 @@ function initSchema() {
       new_articles INTEGER DEFAULT 0,
       errors TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS reel_suggestions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      hook TEXT,
+      script TEXT NOT NULL,
+      justification TEXT NOT NULL,
+      source_article_ids TEXT,
+      source_headlines TEXT,
+      generated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_reel_generated
+      ON reel_suggestions(generated_at DESC);
   `);
 }
 
@@ -110,6 +124,32 @@ function searchArticles(query, limit = 50) {
   `).all(`%${query}%`, `%${query}%`, limit);
 }
 
+function getArticlesFromLastDays(days = 3) {
+  return getDb().prepare(`
+    SELECT * FROM articles
+    WHERE published_at >= datetime('now', '-' || ? || ' days')
+       OR (published_at IS NULL AND discovered_at >= datetime('now', '-' || ? || ' days'))
+    ORDER BY COALESCE(published_at, discovered_at) DESC
+  `).all(days, days);
+}
+
+function insertReelSuggestion({ title, hook, script, justification, sourceArticleIds, sourceHeadlines }) {
+  return getDb().prepare(`
+    INSERT INTO reel_suggestions (title, hook, script, justification, source_article_ids, source_headlines)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(title, hook || '', script, justification, JSON.stringify(sourceArticleIds || []), JSON.stringify(sourceHeadlines || []));
+}
+
+function getReelSuggestions(limit = 20) {
+  return getDb().prepare(`
+    SELECT * FROM reel_suggestions ORDER BY generated_at DESC LIMIT ?
+  `).all(limit);
+}
+
+function clearReelSuggestions() {
+  getDb().prepare('DELETE FROM reel_suggestions').run();
+}
+
 module.exports = {
   getDb,
   insertArticle,
@@ -121,4 +161,8 @@ module.exports = {
   logScan,
   getRecentScans,
   searchArticles,
+  getArticlesFromLastDays,
+  insertReelSuggestion,
+  getReelSuggestions,
+  clearReelSuggestions,
 };

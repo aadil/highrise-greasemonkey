@@ -8,18 +8,26 @@
     "scan": "node scanner.js",
     "dev": "node server.js"
   },
-  "keywords": ["credit-card", "india", "news", "aggregator", "points", "miles"],
+  "keywords": [
+    "credit-card",
+    "india",
+    "news",
+    "aggregator",
+    "points",
+    "miles"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "rss-parser": "^3.13.0",
+    "@anthropic-ai/sdk": "^0.74.0",
+    "axios": "^1.6.5",
+    "better-sqlite3": "^9.4.3",
     "cheerio": "^1.0.0-rc.12",
+    "date-fns": "^3.3.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.8",
-    "better-sqlite3": "^9.4.3",
-    "axios": "^1.6.5",
-    "dotenv": "^16.3.1",
-    "date-fns": "^3.3.1"
+    "rss-parser": "^3.13.0"
   }
 }

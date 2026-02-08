@@ -1,22 +1,24 @@
 require('dotenv').config();
 const express = require('express');
 const cron = require('node-cron');
-const path = require('path');
 const { format, formatDistanceToNow } = require('date-fns');
 const db = require('./db');
 const { runFullScan } = require('./scanner');
 const { sendNewArticleAlerts } = require('./emailer');
+const { generateReelSuggestions } = require('./ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SCAN_INTERVAL = parseInt(process.env.SCAN_INTERVAL_MINUTES || '30', 10);
 
-// --- Scan + Alert Pipeline ---
+// --- Scan + Alert + AI Pipeline ---
 async function scanAndAlert() {
   try {
     const result = await runFullScan();
     if (result.totalNew > 0) {
       await sendNewArticleAlerts();
+      // Generate AI reel suggestions when new articles arrive
+      await generateReelSuggestions();
     }
     return result;
   } catch (err) {
@@ -26,331 +28,508 @@ async function scanAndAlert() {
 }
 
 // --- Dashboard HTML ---
-function renderDashboard(articles, stats, scans, query, filter, req_src) {
-  const categoryColors = {
-    'credit-card': '#1a73e8',
-    'points-miles': '#e67e22',
-    'finance': '#27ae60',
-  };
+function renderDashboard(suggestions, recentArticles) {
+  const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
+  const now = format(new Date(), 'dd MMM yyyy, hh:mm a');
 
-  const categoryLabels = {
-    'credit-card': 'Credit Card',
-    'points-miles': 'Points & Miles',
-    'finance': 'Finance',
-  };
+  const suggestionCards = suggestions.map((s, idx) => {
+    let sourceLinks = '';
+    try {
+      const headlines = JSON.parse(s.source_headlines || '[]');
+      sourceLinks = headlines.map(h =>
+        `<a href="${h.url}" target="_blank" class="source-link">${h.title}</a>`
+      ).join('');
+    } catch (_) {}
 
-  // Detect source platform from source name
-  function getSourcePlatform(sourceName) {
-    if (sourceName.startsWith('Reddit')) return { label: 'Reddit', color: '#ff4500', icon: 'R' };
-    if (sourceName.startsWith('Twitter')) return { label: 'Twitter', color: '#1da1f2', icon: 'X' };
-    if (sourceName.startsWith('Google News')) return { label: 'News', color: '#4285f4', icon: 'G' };
-    if (['CardExpert', 'LiveFromALounge', 'CardInfo'].includes(sourceName)) return { label: 'Blog', color: '#9c27b0', icon: 'B' };
-    return { label: 'News', color: '#666', icon: 'N' };
-  }
-
-  const articleCards = articles.map((a) => {
-    const color = categoryColors[a.category] || '#666';
-    const label = categoryLabels[a.category] || a.category;
-    const platform = getSourcePlatform(a.source);
-    const timeAgo = a.discovered_at ? formatDistanceToNow(new Date(a.discovered_at + 'Z'), { addSuffix: true }) : '';
-    const pubDate = a.published_at ? format(new Date(a.published_at), 'dd MMM yyyy') : '';
+    const timeAgo = s.generated_at
+      ? formatDistanceToNow(new Date(s.generated_at + 'Z'), { addSuffix: true })
+      : '';
 
     return `
-      <div class="card">
-        <div class="card-header">
-          <span class="platform-badge" style="background:${platform.color}">${platform.label}</span>
-          <span class="badge" style="background:${color}">${label}</span>
-          <span class="source">${a.source}</span>
-          <span class="time">${timeAgo}</span>
-        </div>
-        <a href="${a.url}" target="_blank" class="card-title">${a.title}</a>
-        ${a.summary ? `<p class="card-summary">${a.summary.substring(0, 250)}${a.summary.length > 250 ? '...' : ''}</p>` : ''}
-        <div class="card-footer">
-          ${pubDate ? `<span>Published: ${pubDate}</span>` : ''}
-          ${a.emailed ? '<span class="emailed">&#9993; Emailed</span>' : ''}
+      <div class="reel-card">
+        <div class="reel-number">${idx + 1}</div>
+        <div class="reel-content">
+          <div class="reel-header">
+            <h2 class="reel-title">${s.title}</h2>
+            <span class="reel-time">${timeAgo}</span>
+          </div>
+
+          <div class="justification">
+            <span class="why-badge">WHY TODAY</span>
+            ${s.justification}
+          </div>
+
+          <div class="script-section">
+            <div class="section-label">HOOK (Opening Line)</div>
+            <div class="hook-text">"${s.hook}"</div>
+          </div>
+
+          <div class="script-section">
+            <div class="section-label">FULL SCRIPT (30 sec)</div>
+            <div class="script-text">${s.script.replace(/\n/g, '<br>')}</div>
+            <button class="copy-btn" onclick="copyScript(this, ${idx})">Copy Script</button>
+            <textarea class="hidden-script" id="script-${idx}" style="position:absolute;left:-9999px">${s.script}</textarea>
+          </div>
+
+          ${sourceLinks ? `
+          <div class="sources-section">
+            <div class="section-label">SOURCE ARTICLES</div>
+            <div class="source-links">${sourceLinks}</div>
+          </div>` : ''}
         </div>
       </div>`;
   }).join('');
 
-  const sourceStatsHtml = stats.map((s) => `
-    <div class="stat-row">
-      <span class="stat-name">${s.source}</span>
-      <span class="stat-count">${s.count}</span>
-    </div>`).join('');
-
-  const scanLogHtml = scans.map((s) => {
-    const time = s.scanned_at ? format(new Date(s.scanned_at + 'Z'), 'dd MMM HH:mm') : '';
-    return `<tr>
-      <td>${time}</td>
-      <td>${s.sources_checked}</td>
-      <td>${s.new_articles}</td>
-      <td class="${s.errors ? 'error' : ''}">${s.errors ? '⚠' : '✓'}</td>
-    </tr>`;
+  const articleListHtml = recentArticles.slice(0, 15).map(a => {
+    const pubDate = a.published_at ? format(new Date(a.published_at), 'dd MMM') : '';
+    return `
+      <div class="article-mini">
+        <a href="${a.url}" target="_blank">${a.title}</a>
+        <span class="article-meta">${a.source}${pubDate ? ' · ' + pubDate : ''}</span>
+      </div>`;
   }).join('');
+
+  const noApiKeyMessage = !hasApiKey ? `
+    <div class="setup-banner">
+      <strong>Setup Required:</strong> Add your <code>ANTHROPIC_API_KEY</code> in Render environment variables to enable AI-powered reel suggestions.
+      Without it, you'll only see the raw news feed below.
+    </div>` : '';
+
+  const noSuggestionsMessage = hasApiKey && suggestions.length === 0 ? `
+    <div class="empty-state">
+      <h2>No reel suggestions yet</h2>
+      <p>Click "Scan & Generate" to fetch the latest news and generate reel ideas.</p>
+    </div>` : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CC News India - The Great Indian Points</title>
+  <title>The Great Indian Points - Reel Ideas</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f2f5;
-      color: #1a1a1a;
+      background: #0a0a0f;
+      color: #e0e0e0;
+      min-height: 100vh;
     }
     .header {
-      background: linear-gradient(135deg, #1a237e, #0d47a1, #1565c0);
-      color: white;
+      background: linear-gradient(135deg, #1a0530, #2d1b69, #1a237e);
       padding: 24px 32px;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
-    .header h1 { font-size: 24px; font-weight: 700; }
-    .header p { opacity: 0.85; margin-top: 4px; font-size: 14px; }
-    .header-actions {
+    .header-top {
       display: flex;
-      gap: 12px;
-      margin-top: 16px;
+      justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
+      gap: 12px;
     }
-    .search-box {
-      flex: 1;
-      min-width: 200px;
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      background: rgba(255,255,255,0.15);
-      color: white;
-      outline: none;
+    .brand h1 {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(to right, #f0c27f, #fc5c7d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    .search-box::placeholder { color: rgba(255,255,255,0.6); }
-    .search-box:focus { background: rgba(255,255,255,0.25); }
+    .brand p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 2px;
+    }
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
     .btn {
       padding: 10px 20px;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       text-decoration: none;
       transition: all 0.2s;
-    }
-    .btn-scan {
-      background: #4caf50;
       color: white;
     }
-    .btn-scan:hover { background: #388e3c; }
-    .btn-filter {
-      background: rgba(255,255,255,0.15);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.3);
+    .btn-generate {
+      background: linear-gradient(135deg, #f0c27f, #fc5c7d);
+      color: #1a0530;
     }
-    .btn-filter:hover, .btn-filter.active {
-      background: rgba(255,255,255,0.3);
+    .btn-generate:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
     }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 24px;
-      display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 24px;
-    }
-    @media (max-width: 768px) {
-      .container { grid-template-columns: 1fr; }
-    }
-    .feed { display: flex; flex-direction: column; gap: 16px; }
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      transition: box-shadow 0.2s;
-    }
-    .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
-    .card-header {
+    .btn-secondary:hover { background: rgba(255,255,255,0.2); }
+    .status-bar {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-    .platform-badge {
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      color: white;
-      letter-spacing: 0.5px;
-    }
-    .badge {
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      color: white;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .source { font-size: 13px; color: #666; }
-    .time { font-size: 12px; color: #999; margin-left: auto; }
-    .card-title {
-      display: block;
-      font-size: 17px;
-      font-weight: 600;
-      color: #1a0dab;
-      text-decoration: none;
-      line-height: 1.4;
-      margin-bottom: 8px;
-    }
-    .card-title:hover { text-decoration: underline; }
-    .card-summary { font-size: 14px; color: #555; line-height: 1.5; }
-    .card-footer {
-      display: flex;
-      gap: 12px;
-      margin-top: 10px;
+      gap: 16px;
+      margin-top: 12px;
       font-size: 12px;
-      color: #888;
+      color: rgba(255,255,255,0.5);
     }
-    .emailed { color: #4caf50; }
-    .sidebar { display: flex; flex-direction: column; gap: 16px; }
-    .sidebar-box {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    }
-    .sidebar-box h3 {
-      font-size: 15px;
-      margin-bottom: 12px;
-      color: #333;
-      border-bottom: 2px solid #1a73e8;
-      padding-bottom: 8px;
-    }
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 6px 0;
-      font-size: 13px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    .stat-count {
-      font-weight: 600;
-      color: #1a73e8;
-    }
-    table { width: 100%; font-size: 12px; border-collapse: collapse; }
-    th, td { padding: 6px 4px; text-align: left; border-bottom: 1px solid #f0f0f0; }
-    th { font-weight: 600; color: #666; }
-    .error { color: #e53935; }
-    .empty-state {
-      text-align: center;
-      padding: 48px;
-      color: #999;
-    }
-    .empty-state h2 { margin-bottom: 8px; color: #666; }
-    .scanning-indicator {
+    .status-dot {
       display: inline-block;
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       background: #4caf50;
-      margin-right: 6px;
+      margin-right: 4px;
       animation: pulse 2s infinite;
     }
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      50% { opacity: 0.3; }
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+    .setup-banner {
+      background: rgba(252, 92, 125, 0.1);
+      border: 1px solid rgba(252, 92, 125, 0.3);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: #fc5c7d;
+    }
+    .setup-banner code {
+      background: rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 64px 24px;
+      color: rgba(255,255,255,0.4);
+    }
+    .empty-state h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    /* Reel suggestion cards */
+    .reel-card {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 24px;
+      transition: border-color 0.2s;
+    }
+    .reel-card:hover {
+      border-color: rgba(240, 194, 127, 0.3);
+    }
+    .reel-number {
+      font-size: 32px;
+      font-weight: 800;
+      color: rgba(240, 194, 127, 0.3);
+      min-width: 40px;
+      line-height: 1;
+      padding-top: 4px;
+    }
+    .reel-content { flex: 1; min-width: 0; }
+    .reel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .reel-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    .reel-time {
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      white-space: nowrap;
+      padding-top: 4px;
+    }
+    .justification {
+      background: linear-gradient(135deg, rgba(252,92,125,0.1), rgba(240,194,127,0.1));
+      border-left: 3px solid #fc5c7d;
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 14px;
+      font-weight: 500;
+      color: #f0c27f;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .why-badge {
+      background: #fc5c7d;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .script-section {
+      margin-bottom: 16px;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .hook-text {
+      font-size: 18px;
+      font-weight: 600;
+      font-style: italic;
+      color: #f0c27f;
+      line-height: 1.4;
+      padding: 8px 0;
+    }
+    .script-text {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.85);
+      white-space: pre-wrap;
+    }
+    .copy-btn {
+      margin-top: 8px;
+      padding: 6px 14px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.15); color: white; }
+    .sources-section { margin-top: 4px; }
+    .source-links {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .source-link {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      text-decoration: none;
+      padding: 4px 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .source-link:hover { color: #f0c27f; }
+
+    /* Recent articles sidebar */
+    .recent-section {
+      margin-top: 40px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 24px;
+    }
+    .recent-section h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+    .article-mini {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .article-mini a {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      line-height: 1.4;
+      display: block;
+    }
+    .article-mini a:hover { color: #f0c27f; }
+    .article-meta {
+      font-size: 11px;
+      color: rgba(255,255,255,0.25);
+      margin-top: 2px;
+      display: block;
+    }
+
+    @media (max-width: 640px) {
+      .header { padding: 16px; }
+      .container { padding: 16px 12px; }
+      .reel-card { flex-direction: column; gap: 8px; padding: 16px; }
+      .reel-number { font-size: 24px; }
+      .reel-title { font-size: 17px; }
+      .hook-text { font-size: 16px; }
+    }
+
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10,10,15,0.85);
+      z-index: 200;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .loading-overlay.active { display: flex; }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #f0c27f;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      color: rgba(255,255,255,0.6);
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>Credit Card News India</h1>
-    <p><span class="scanning-indicator"></span>The Great Indian Points · News Aggregator</p>
-    <div class="header-actions">
-      <form method="GET" action="/" style="display:contents;">
-        <input type="text" name="q" class="search-box" placeholder="Search articles..." value="${query || ''}">
-      </form>
-      <a href="/?filter=credit-card" class="btn btn-filter ${filter === 'credit-card' ? 'active' : ''}">Credit Cards</a>
-      <a href="/?filter=points-miles" class="btn btn-filter ${filter === 'points-miles' ? 'active' : ''}">Points & Miles</a>
-      <a href="/?src=twitter" class="btn btn-filter ${req_src === 'twitter' ? 'active' : ''}" style="border-color:#1da1f2">Twitter</a>
-      <a href="/?src=reddit" class="btn btn-filter ${req_src === 'reddit' ? 'active' : ''}" style="border-color:#ff4500">Reddit</a>
-      <a href="/" class="btn btn-filter ${!filter && !req_src ? 'active' : ''}">All</a>
-      <a href="/scan" class="btn btn-scan">Scan Now</a>
+    <div class="header-top">
+      <div class="brand">
+        <h1>The Great Indian Points</h1>
+        <p>AI-Powered Reel Ideas Dashboard</p>
+      </div>
+      <div class="header-actions">
+        <a href="/articles" class="btn btn-secondary">Raw Feed</a>
+        <a href="#" onclick="triggerGenerate()" class="btn btn-generate">Scan & Generate</a>
+      </div>
+    </div>
+    <div class="status-bar">
+      <span><span class="status-dot"></span>Auto-scanning every ${SCAN_INTERVAL} min</span>
+      <span>Last updated: ${now}</span>
+      <span>Articles (3 days): ${recentArticles.length}</span>
     </div>
   </div>
+
   <div class="container">
-    <div class="feed">
-      ${articles.length > 0 ? articleCards : `
-        <div class="empty-state">
-          <h2>No articles yet</h2>
-          <p>Click "Scan Now" to fetch the latest credit card news from India.</p>
-        </div>`}
-    </div>
-    <div class="sidebar">
-      <div class="sidebar-box">
-        <h3>Total Articles</h3>
-        <div style="font-size:32px;font-weight:700;color:#1a73e8;">${db.getArticleCount()}</div>
-      </div>
-      <div class="sidebar-box">
-        <h3>Sources</h3>
-        ${sourceStatsHtml || '<p style="color:#999;font-size:13px;">No data yet</p>'}
-      </div>
-      <div class="sidebar-box">
-        <h3>Recent Scans</h3>
-        <table>
-          <thead><tr><th>Time</th><th>Src</th><th>New</th><th></th></tr></thead>
-          <tbody>${scanLogHtml || '<tr><td colspan="4" style="color:#999;">No scans yet</td></tr>'}</tbody>
-        </table>
-      </div>
-    </div>
+    ${noApiKeyMessage}
+    ${noSuggestionsMessage}
+    ${suggestionCards}
+
+    ${recentArticles.length > 0 ? `
+    <div class="recent-section">
+      <h3>LATEST NEWS FEED (LAST 3 DAYS)</h3>
+      ${articleListHtml}
+    </div>` : ''}
   </div>
+
+  <div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Scanning news sources & generating reel ideas...</div>
+  </div>
+
   <script>
-    // Auto-refresh every 5 minutes
-    setTimeout(() => window.location.reload(), 5 * 60 * 1000);
+    function copyScript(btn, idx) {
+      const text = document.getElementById('script-' + idx).value;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy Script'; }, 2000);
+      });
+    }
+
+    function triggerGenerate() {
+      document.getElementById('loading').classList.add('active');
+      fetch('/api/generate').then(r => r.json()).then(() => {
+        window.location.reload();
+      }).catch(() => {
+        window.location.href = '/scan';
+      });
+    }
+
+    // Auto-refresh every 10 minutes
+    setTimeout(() => window.location.reload(), 10 * 60 * 1000);
   </script>
 </body>
 </html>`;
 }
 
+// --- Old article feed dashboard ---
+function renderArticleFeed(articles) {
+  const articleCards = articles.map((a) => {
+    const timeAgo = a.discovered_at ? formatDistanceToNow(new Date(a.discovered_at + 'Z'), { addSuffix: true }) : '';
+    const pubDate = a.published_at ? format(new Date(a.published_at), 'dd MMM yyyy') : '';
+    return `
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;color:rgba(255,255,255,0.4);">${a.source}</span>
+          <span style="font-size:11px;color:rgba(255,255,255,0.25);">${timeAgo}</span>
+        </div>
+        <a href="${a.url}" target="_blank" style="color:#f0c27f;text-decoration:none;font-size:15px;font-weight:600;line-height:1.4;">${a.title}</a>
+        ${pubDate ? `<div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px;">Published: ${pubDate}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Raw Feed - The Great Indian Points</title>
+<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0f;color:#e0e0e0;}</style>
+</head><body>
+<div style="padding:24px 32px;background:linear-gradient(135deg,#1a0530,#2d1b69);border-bottom:1px solid rgba(255,255,255,0.1);">
+  <h1 style="font-size:20px;color:#f0c27f;">Raw News Feed</h1>
+  <p style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;">All articles from last 3 days</p>
+  <a href="/" style="color:#fc5c7d;font-size:13px;margin-top:8px;display:inline-block;">Back to Reel Ideas</a>
+</div>
+<div style="max-width:800px;margin:0 auto;padding:24px 16px;">
+  ${articles.length > 0 ? articleCards : '<p style="text-align:center;color:rgba(255,255,255,0.3);padding:48px;">No articles from the last 3 days.</p>'}
+</div>
+</body></html>`;
+}
+
 // --- Routes ---
 app.get('/', (req, res) => {
-  const query = req.query.q || '';
-  const filter = req.query.filter || '';
-  const src = req.query.src || '';
+  const suggestions = db.getReelSuggestions(10);
+  const recentArticles = db.getArticlesFromLastDays(3);
+  res.send(renderDashboard(suggestions, recentArticles));
+});
 
-  let articles;
-  if (query) {
-    articles = db.searchArticles(query);
-  } else {
-    articles = db.getRecentArticles(100);
-  }
-
-  if (filter) {
-    articles = articles.filter((a) => a.category === filter);
-  }
-
-  if (src === 'twitter') {
-    articles = articles.filter((a) => a.source.startsWith('Twitter'));
-  } else if (src === 'reddit') {
-    articles = articles.filter((a) => a.source.startsWith('Reddit'));
-  }
-
-  const stats = db.getSourceStats();
-  const scans = db.getRecentScans(10);
-  res.send(renderDashboard(articles, stats, scans, query, filter, src));
+app.get('/articles', (req, res) => {
+  const articles = db.getArticlesFromLastDays(3);
+  res.send(renderArticleFeed(articles));
 });
 
 app.get('/scan', async (req, res) => {
   const result = await scanAndAlert();
-  res.redirect('/?scanned=1&new=' + (result.totalNew || 0));
+  res.redirect('/');
+});
+
+app.get('/api/generate', async (req, res) => {
+  try {
+    // First scan for new articles
+    const scanResult = await runFullScan();
+    // Then generate suggestions
+    const suggestions = await generateReelSuggestions();
+    res.json({ scan: scanResult, suggestions: suggestions.length });
+  } catch (err) {
+    console.error('[Server] Generate error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/articles', (req, res) => {
@@ -366,21 +545,24 @@ app.get('/api/scan', async (req, res) => {
   res.json(result);
 });
 
+app.get('/api/suggestions', (req, res) => {
+  res.json({ suggestions: db.getReelSuggestions(10) });
+});
+
 app.get('/api/stats', (req, res) => {
   res.json({
     totalArticles: db.getArticleCount(),
+    recentArticles: db.getArticlesFromLastDays(3).length,
     sources: db.getSourceStats(),
     recentScans: db.getRecentScans(10),
   });
 });
 
-// Health check + keepalive endpoint (for free tier cron services)
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', articles: db.getArticleCount(), uptime: process.uptime() });
 });
 
 // --- Scheduler ---
-// Convert minutes to cron expression
 function minutesToCron(minutes) {
   if (minutes <= 0 || minutes >= 1440) return '*/30 * * * *';
   if (minutes < 60) return `*/${minutes} * * * *`;
@@ -399,13 +581,15 @@ cron.schedule(cronExpr, () => {
 // --- Start ---
 app.listen(PORT, () => {
   console.log(`[Server] Dashboard running at http://localhost:${PORT}`);
-  console.log(`[Server] API endpoints:`);
-  console.log(`  GET /api/articles   - List articles (query params: limit, offset, q)`);
-  console.log(`  GET /api/scan       - Trigger a scan`);
-  console.log(`  GET /api/stats      - View stats`);
-  console.log(`  GET /scan           - Scan and redirect to dashboard`);
+  console.log(`[Server] Routes:`);
+  console.log(`  GET /             - Reel ideas dashboard`);
+  console.log(`  GET /articles     - Raw article feed (last 3 days)`);
+  console.log(`  GET /api/generate - Scan + generate reel suggestions`);
+  console.log(`  GET /api/articles - List articles`);
+  console.log(`  GET /api/suggestions - Get reel suggestions`);
+  console.log(`  GET /scan         - Trigger scan`);
 
-  // Run an initial scan on startup
+  // Run initial scan + generate on startup
   console.log('[Server] Running initial scan...');
   scanAndAlert();
 });

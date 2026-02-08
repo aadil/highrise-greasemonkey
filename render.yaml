@@ -11,7 +11,10 @@ services:
         value: "30"
       - key: PORT
         value: "3000"
-      # Optional: set these in Render dashboard for email alerts
+      # Required: Anthropic API key for AI reel suggestions
+      # - key: ANTHROPIC_API_KEY
+      #   value: sk-ant-...
+      # Optional: Gmail for email alerts
       # - key: GMAIL_USER
       #   value: your-email@gmail.com
       # - key: GMAIL_APP_PASSWORD
