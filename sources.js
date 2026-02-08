@@ -10,6 +10,7 @@ const SOURCES = [
     type: 'reddit',
     url: 'https://www.reddit.com/r/CreditCardsIndia/new.json?limit=50',
     category: 'credit-card',
+    filterKeywords: true,
   },
   {
     name: 'Reddit - r/IndiaInvestments (CC)',
@@ -30,12 +31,14 @@ const SOURCES = [
     type: 'reddit',
     url: 'https://www.reddit.com/r/CreditCardIndia/new.json?limit=50',
     category: 'credit-card',
+    filterKeywords: true,
   },
   {
     name: 'Reddit - r/IndianCreditCards',
     type: 'reddit',
     url: 'https://www.reddit.com/r/IndianCreditCards/new.json?limit=50',
     category: 'credit-card',
+    filterKeywords: true,
   },
   // Reddit search queries for broader coverage
   {

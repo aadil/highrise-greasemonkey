@@ -1,5 +1,6 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const db = require('./db');
+const { FILTER_KEYWORDS } = require('./sources');
 
 let client = null;
 
@@ -11,6 +12,11 @@ function getClient() {
   return client;
 }
 
+function isRelevantArticle(article) {
+  const text = ((article.title || '') + ' ' + (article.summary || '')).toLowerCase();
+  return FILTER_KEYWORDS.some(kw => text.includes(kw));
+}
+
 async function generateReelSuggestions() {
   const anthropic = getClient();
   if (!anthropic) {
@@ -18,13 +24,15 @@ async function generateReelSuggestions() {
     return [];
   }
 
-  const articles = db.getArticlesFromLastDays(3);
+  const allArticles = db.getArticlesFromLastDays(3);
+  // Only send relevant credit card / points / miles articles to the AI
+  const articles = allArticles.filter(isRelevantArticle);
   if (!articles || articles.length === 0) {
-    console.log('[AI] No articles from last 3 days. Skipping.');
+    console.log(`[AI] No relevant articles from last 3 days (${allArticles.length} total, 0 relevant). Skipping.`);
     return [];
   }
 
-  console.log(`[AI] Generating reel suggestions from ${articles.length} recent articles...`);
+  console.log(`[AI] Generating reel suggestions from ${articles.length} relevant articles (${allArticles.length} total)...`);
 
   const articleList = articles.map((a, i) =>
     `${i + 1}. "${a.title}" (Source: ${a.source}, Published: ${a.published_at || 'Unknown'})\n   Summary: ${(a.summary || 'N/A').substring(0, 200)}`

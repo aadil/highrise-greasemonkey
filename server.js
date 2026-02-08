@@ -6,8 +6,15 @@ const db = require('./db');
 const { runFullScan } = require('./scanner');
 const { sendNewArticleAlerts } = require('./emailer');
 const { generateReelSuggestions } = require('./ai');
+const { FILTER_KEYWORDS } = require('./sources');
 
 const app = express();
+
+// Filter articles to only credit-card/points/miles relevant content
+function isRelevantArticle(article) {
+  const text = ((article.title || '') + ' ' + (article.summary || '')).toLowerCase();
+  return FILTER_KEYWORDS.some(kw => text.includes(kw));
+}
 const PORT = process.env.PORT || 3000;
 const SCAN_INTERVAL = parseInt(process.env.SCAN_INTERVAL_MINUTES || '30', 10);
 
@@ -91,14 +98,17 @@ function renderDashboard(suggestions, recentArticles) {
 
   const noApiKeyMessage = !hasApiKey ? `
     <div class="setup-banner">
-      <strong>Setup Required:</strong> Add your <code>ANTHROPIC_API_KEY</code> in Render environment variables to enable AI-powered reel suggestions.
-      Without it, you'll only see the raw news feed below.
+      <strong>Setup Required:</strong> Add your <code>ANTHROPIC_API_KEY</code> in Render &rarr; Environment settings to enable AI-powered reel suggestions.
+      <br><br>
+      <strong>Steps:</strong> Go to Render dashboard &rarr; your service &rarr; Environment (left sidebar) &rarr; Add Environment Variable &rarr;
+      Key: <code>ANTHROPIC_API_KEY</code>, Value: your key from console.anthropic.com &rarr; Save &rarr; it will auto-redeploy.
     </div>` : '';
 
   const noSuggestionsMessage = hasApiKey && suggestions.length === 0 ? `
     <div class="empty-state">
       <h2>No reel suggestions yet</h2>
-      <p>Click "Scan & Generate" to fetch the latest news and generate reel ideas.</p>
+      <p>Click "Generate Ideas" below. The AI will analyze ${recentArticles.length} recent articles and create reel scripts for you.</p>
+      <a href="#" onclick="triggerGenerate(); return false;" class="btn btn-generate" style="display:inline-block;margin-top:16px;">Generate Ideas Now</a>
     </div>` : '';
 
   return `<!DOCTYPE html>
@@ -418,7 +428,8 @@ function renderDashboard(suggestions, recentArticles) {
       </div>
       <div class="header-actions">
         <a href="/articles" class="btn btn-secondary">Raw Feed</a>
-        <a href="#" onclick="triggerGenerate()" class="btn btn-generate">Scan & Generate</a>
+        <a href="/scan" class="btn btn-secondary">Scan News</a>
+        <a href="#" onclick="triggerGenerate(); return false;" class="btn btn-generate">Generate Ideas</a>
       </div>
     </div>
     <div class="status-bar">
@@ -455,16 +466,36 @@ function renderDashboard(suggestions, recentArticles) {
     }
 
     function triggerGenerate() {
-      document.getElementById('loading').classList.add('active');
-      fetch('/api/generate').then(r => r.json()).then(() => {
-        window.location.reload();
-      }).catch(() => {
-        window.location.href = '/scan';
-      });
+      var overlay = document.getElementById('loading');
+      var loadingText = overlay.querySelector('.loading-text');
+      overlay.classList.add('active');
+      loadingText.textContent = 'Generating reel ideas from recent news...';
+
+      fetch('/api/generate', { signal: AbortSignal.timeout(25000) })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.error) {
+            loadingText.innerHTML = '<span style="color:#fc5c7d;">' + data.message + '</span>';
+            setTimeout(function() { overlay.classList.remove('active'); }, 4000);
+          } else {
+            window.location.reload();
+          }
+        })
+        .catch(function() {
+          loadingText.textContent = 'Timed out. Retrying...';
+          // Retry once with longer timeout
+          fetch('/api/generate', { signal: AbortSignal.timeout(55000) })
+            .then(function(r) { return r.json(); })
+            .then(function() { window.location.reload(); })
+            .catch(function() {
+              loadingText.innerHTML = 'Generation failed. Check that ANTHROPIC_API_KEY is set in Render Environment settings.';
+              setTimeout(function() { overlay.classList.remove('active'); }, 5000);
+            });
+        });
     }
 
     // Auto-refresh every 10 minutes
-    setTimeout(() => window.location.reload(), 10 * 60 * 1000);
+    setTimeout(function() { window.location.reload(); }, 10 * 60 * 1000);
   </script>
 </body>
 </html>`;
@@ -505,12 +536,12 @@ function renderArticleFeed(articles) {
 // --- Routes ---
 app.get('/', (req, res) => {
   const suggestions = db.getReelSuggestions(10);
-  const recentArticles = db.getArticlesFromLastDays(3);
+  const recentArticles = db.getArticlesFromLastDays(3).filter(isRelevantArticle);
   res.send(renderDashboard(suggestions, recentArticles));
 });
 
 app.get('/articles', (req, res) => {
-  const articles = db.getArticlesFromLastDays(3);
+  const articles = db.getArticlesFromLastDays(3).filter(isRelevantArticle);
   res.send(renderArticleFeed(articles));
 });
 
@@ -520,16 +551,28 @@ app.get('/scan', async (req, res) => {
 });
 
 app.get('/api/generate', async (req, res) => {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(400).json({
+      error: 'ANTHROPIC_API_KEY not configured',
+      message: 'Add your Anthropic API key in Render Environment settings to enable AI reel suggestions.'
+    });
+  }
   try {
-    // First scan for new articles
-    const scanResult = await runFullScan();
-    // Then generate suggestions
+    // Only generate suggestions from existing articles (scan runs separately on cron)
     const suggestions = await generateReelSuggestions();
-    res.json({ scan: scanResult, suggestions: suggestions.length });
+    res.json({ suggestions: suggestions.length, ok: true });
   } catch (err) {
     console.error('[Server] Generate error:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+app.get('/api/status', (req, res) => {
+  res.json({
+    hasApiKey: !!process.env.ANTHROPIC_API_KEY,
+    recentArticles: db.getArticlesFromLastDays(3).length,
+    suggestions: db.getReelSuggestions(1).length,
+  });
 });
 
 app.get('/api/articles', (req, res) => {
