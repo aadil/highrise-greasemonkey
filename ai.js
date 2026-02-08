@@ -25,20 +25,27 @@ async function generateReelSuggestions() {
   }
 
   const allArticles = db.getArticlesFromLastDays(3);
-  // Only send relevant credit card / points / miles articles to the AI
   const articles = allArticles.filter(isRelevantArticle);
   if (!articles || articles.length === 0) {
     console.log(`[AI] No relevant articles from last 3 days (${allArticles.length} total, 0 relevant). Skipping.`);
     return [];
   }
 
-  console.log(`[AI] Generating reel suggestions from ${articles.length} relevant articles (${allArticles.length} total)...`);
+  // Get existing suggestions to avoid duplicates
+  const existingSuggestions = db.getReelSuggestions(20);
+  const existingTitles = existingSuggestions.map(s => s.title).join('\n- ');
+
+  console.log(`[AI] Generating reel suggestions from ${articles.length} relevant articles (${allArticles.length} total, ${existingSuggestions.length} existing suggestions)...`);
 
   const articleList = articles.map((a, i) =>
     `${i + 1}. "${a.title}" (Source: ${a.source}, Published: ${a.published_at || 'Unknown'})\n   Summary: ${(a.summary || 'N/A').substring(0, 200)}`
   ).join('\n\n');
 
   const today = new Date().toISOString().split('T')[0];
+
+  const avoidDuplicatesBlock = existingTitles
+    ? `\n\nIMPORTANT - These reel ideas ALREADY EXIST. Do NOT repeat these topics:\n- ${existingTitles}\n\nGenerate DIFFERENT ideas covering NEW angles or different news stories.`
+    : '';
 
   const prompt = `You are the content strategist for "The Great Indian Points", a popular Indian credit card, points and miles social media channel that creates short-form video content (Instagram Reels / YouTube Shorts).
 
@@ -47,6 +54,7 @@ Today's date: ${today}
 Here are the latest news articles from the past 3 days about credit cards, points, and miles in India:
 
 ${articleList}
+${avoidDuplicatesBlock}
 
 Based on these articles, suggest the TOP reel ideas that would perform best TODAY. For each suggestion provide:
 
@@ -61,7 +69,7 @@ Rules:
 - Skip generic "top 5 cards" or evergreen content - focus on BREAKING NEWS and timely updates
 - Each script should be 30-35 seconds when spoken aloud at normal speed
 - Make the hook irresistible - create FOMO, curiosity, or urgency
-- Maximum 5 suggestions, minimum 1
+- Generate 3 to 5 suggestions
 - If articles are old/stale or not newsworthy, return FEWER suggestions rather than forcing bad ideas
 - Prioritize: regulatory changes > card launches/devaluations > time-sensitive offers > trending discussions
 
@@ -76,7 +84,6 @@ Return ONLY a valid JSON array, no markdown fences, no explanation:
     });
 
     const text = response.content[0].text.trim();
-    // Try to extract JSON even if there's extra text
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       console.error('[AI] Could not parse JSON from response:', text.substring(0, 200));
@@ -85,9 +92,10 @@ Return ONLY a valid JSON array, no markdown fences, no explanation:
 
     const suggestions = JSON.parse(jsonMatch[0]);
 
-    // Clear old suggestions and insert new ones
-    db.clearReelSuggestions();
+    // Expire old suggestions (older than 3 days) but keep recent ones
+    db.clearOldSuggestions(3);
 
+    // Add new suggestions (accumulate, don't wipe)
     for (const s of suggestions) {
       const sourceIds = (s.source_indices || []).map(i => {
         const article = articles[i - 1];
@@ -109,7 +117,7 @@ Return ONLY a valid JSON array, no markdown fences, no explanation:
       });
     }
 
-    console.log(`[AI] Generated ${suggestions.length} reel suggestions.`);
+    console.log(`[AI] Generated ${suggestions.length} new reel suggestions (total in DB: ${db.getSuggestionCount()}).`);
     return suggestions;
   } catch (err) {
     console.error('[AI] Error generating reel suggestions:', err.message);

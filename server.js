@@ -18,19 +18,28 @@ function isRelevantArticle(article) {
 const PORT = process.env.PORT || 3000;
 const SCAN_INTERVAL = parseInt(process.env.SCAN_INTERVAL_MINUTES || '30', 10);
 
-// --- Scan + Alert + AI Pipeline ---
+// --- Scan + Alert Pipeline (no AI here — AI runs on its own schedule) ---
 async function scanAndAlert() {
   try {
     const result = await runFullScan();
     if (result.totalNew > 0) {
       await sendNewArticleAlerts();
-      // Generate AI reel suggestions when new articles arrive
-      await generateReelSuggestions();
     }
     return result;
   } catch (err) {
     console.error('[Server] Scan+Alert pipeline error:', err);
     return { error: err.message };
+  }
+}
+
+// --- AI Generation (runs independently every 6 hours + on startup) ---
+async function runAiGeneration() {
+  try {
+    if (!process.env.ANTHROPIC_API_KEY) return;
+    console.log(`[Server] AI generation triggered at ${new Date().toISOString()}`);
+    await generateReelSuggestions();
+  } catch (err) {
+    console.error('[Server] AI generation error:', err);
   }
 }
 
@@ -433,9 +442,9 @@ function renderDashboard(suggestions, recentArticles) {
       </div>
     </div>
     <div class="status-bar">
-      <span><span class="status-dot"></span>Auto-scanning every ${SCAN_INTERVAL} min</span>
-      <span>Last updated: ${now}</span>
-      <span>Articles (3 days): ${recentArticles.length}</span>
+      <span><span class="status-dot"></span>Scans every ${SCAN_INTERVAL}min &middot; AI generates every 6h</span>
+      <span>Updated: ${now}</span>
+      <span>${recentArticles.length} articles (3d) &middot; ${suggestions.length} ideas</span>
     </div>
   </div>
 
@@ -535,7 +544,7 @@ function renderArticleFeed(articles) {
 
 // --- Routes ---
 app.get('/', (req, res) => {
-  const suggestions = db.getReelSuggestions(10);
+  const suggestions = db.getReelSuggestions(20);
   const recentArticles = db.getArticlesFromLastDays(3).filter(isRelevantArticle);
   res.send(renderDashboard(suggestions, recentArticles));
 });
@@ -589,7 +598,7 @@ app.get('/api/scan', async (req, res) => {
 });
 
 app.get('/api/suggestions', (req, res) => {
-  res.json({ suggestions: db.getReelSuggestions(10) });
+  res.json({ suggestions: db.getReelSuggestions(20) });
 });
 
 app.get('/api/stats', (req, res) => {
@@ -614,25 +623,39 @@ function minutesToCron(minutes) {
 }
 
 const cronExpr = minutesToCron(SCAN_INTERVAL);
-console.log(`[Server] Scheduling scans every ${SCAN_INTERVAL} minutes (cron: ${cronExpr})`);
+console.log(`[Server] Scheduling news scans every ${SCAN_INTERVAL} minutes (cron: ${cronExpr})`);
 
+// News scan every 30 minutes
 cron.schedule(cronExpr, () => {
   console.log(`[Server] Scheduled scan triggered at ${new Date().toISOString()}`);
   scanAndAlert();
+});
+
+// AI reel generation every 6 hours (4x/day — economical)
+console.log('[Server] Scheduling AI reel generation every 6 hours (cron: 0 */6 * * *)');
+cron.schedule('0 */6 * * *', () => {
+  console.log(`[Server] Scheduled AI generation at ${new Date().toISOString()}`);
+  runAiGeneration();
 });
 
 // --- Start ---
 app.listen(PORT, () => {
   console.log(`[Server] Dashboard running at http://localhost:${PORT}`);
   console.log(`[Server] Routes:`);
-  console.log(`  GET /             - Reel ideas dashboard`);
+  console.log(`  GET /             - Reel ideas dashboard (top 20)`);
   console.log(`  GET /articles     - Raw article feed (last 3 days)`);
-  console.log(`  GET /api/generate - Scan + generate reel suggestions`);
+  console.log(`  GET /api/generate - Generate reel suggestions`);
   console.log(`  GET /api/articles - List articles`);
   console.log(`  GET /api/suggestions - Get reel suggestions`);
   console.log(`  GET /scan         - Trigger scan`);
 
-  // Run initial scan + generate on startup
+  // Run initial scan on startup
   console.log('[Server] Running initial scan...');
-  scanAndAlert();
+  scanAndAlert().then(() => {
+    // Generate AI suggestions after first scan completes (if none exist)
+    if (db.getSuggestionCount() === 0) {
+      console.log('[Server] No suggestions in DB — running initial AI generation...');
+      runAiGeneration();
+    }
+  });
 });

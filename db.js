@@ -146,8 +146,15 @@ function getReelSuggestions(limit = 20) {
   `).all(limit);
 }
 
-function clearReelSuggestions() {
-  getDb().prepare('DELETE FROM reel_suggestions').run();
+function clearOldSuggestions(days = 3) {
+  getDb().prepare(`
+    DELETE FROM reel_suggestions
+    WHERE generated_at < datetime('now', '-' || ? || ' days')
+  `).run(days);
+}
+
+function getSuggestionCount() {
+  return getDb().prepare('SELECT COUNT(*) as count FROM reel_suggestions').get().count;
 }
 
 module.exports = {
@@ -164,5 +171,6 @@ module.exports = {
   getArticlesFromLastDays,
   insertReelSuggestion,
   getReelSuggestions,
-  clearReelSuggestions,
+  clearOldSuggestions,
+  getSuggestionCount,
 };
