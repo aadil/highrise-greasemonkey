@@ -4,7 +4,7 @@ A real-time news aggregation service for Indian credit card, points, and miles n
 
 ## What It Does
 
-- Scans **18 news sources** every 30 minutes (configurable) for credit card and points/miles news relevant to India
+- Scans **69 sources** every 30 minutes (configurable): 43 Twitter/X accounts, 8 Reddit feeds, 12 Google News queries, 3 CC blogs, 3 finance news sites
 - **Web dashboard** at `http://localhost:3000` to browse, search, and filter articles
 - **Gmail email alerts** when new articles are found
 - **SQLite database** for deduplication and history
@@ -12,9 +12,35 @@ A real-time news aggregation service for Indian credit card, points, and miles n
 
 ## News Sources
 
+### Twitter/X (43 accounts via xcancel.com RSS)
+
+**Your picks:** @CardsavvyIndia, @ProfessorCardz, @suritalreja, @EvryPaisaMatter, @LiveFromALounge, @CardMavenIn, @akshat_money, @imYadav31, @TechnoFino, @CreditPedia, @nikravel, @Boopathy_SA, @MagnifyClub, @credofly, @savesage_club, @DoBaniye, @spendwiselyx, @pointperkspicks, @asktarunn, @AmazingCreditC, @milesmintIN, @chandrarsrikant, @luxe_explorer
+
+**Additional influencers:** @AskTriMan, @cardinsider, @creditcardz_in, @credithelpindia, @CardExpert_in
+
+**Bank & institutional handles (keyword-filtered):** @SBICard_Connect, @HDFCBank, @ICICIBank, @AxisBank, @GetOneCardIN, @AmexIndia, @aubank, @IDFCFIRSTBank, @IndusInd_Bank, @YesBank, @KotakBankLtd, @RBLBankLtd, @FederalBankLtd, @RuPay_npci, @RBI
+
+### Reddit (8 feeds)
+
 | Source | Type |
 |--------|------|
-| Google News (12 India-specific queries) | RSS |
+| r/CreditCardsIndia (new posts) | JSON API |
+| r/CreditCardIndia (new posts) | JSON API |
+| r/IndianCreditCards (new posts) | JSON API |
+| r/IndiaInvestments (keyword-filtered) | JSON API |
+| r/india (keyword-filtered) | JSON API |
+| Reddit Search: "credit card india" | JSON API |
+| Reddit Search: "HDFC credit card" | JSON API |
+| Reddit Search: "points miles india" | JSON API |
+
+### Google News RSS (12 India-specific queries)
+
+Credit Card India, Rewards, New Launches, RBI Regulation, Amex, HDFC, SBI, ICICI, Axis Bank, Points & Miles, Loyalty Programs, Lounge Access
+
+### Blogs & Finance News
+
+| Source | Type |
+|--------|------|
 | CardExpert.in | RSS |
 | LiveFromALounge.com | RSS |
 | CardInfo.in | RSS |

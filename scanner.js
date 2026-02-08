@@ -11,6 +11,11 @@ const rssParser = new RssParser({
   },
 });
 
+const REDDIT_HEADERS = {
+  'User-Agent': 'CCNewsIndia/1.0 (Credit Card News Aggregator)',
+  Accept: 'application/json',
+};
+
 function matchesKeywords(text) {
   const lower = (text || '').toLowerCase();
   return FILTER_KEYWORDS.some((kw) => lower.includes(kw));
@@ -22,6 +27,7 @@ function cleanHtml(html) {
   return $.text().trim().substring(0, 500);
 }
 
+// --- RSS Scanner (Google News, blogs, Twitter/xcancel) ---
 async function scanRssSource(source) {
   const articles = [];
   try {
@@ -57,6 +63,63 @@ async function scanRssSource(source) {
   return { articles, error: null };
 }
 
+// --- Reddit JSON Scanner ---
+async function scanRedditSource(source) {
+  const articles = [];
+  try {
+    const resp = await axios.get(source.url, {
+      headers: REDDIT_HEADERS,
+      timeout: 15000,
+    });
+
+    const posts = resp.data?.data?.children || [];
+    for (const child of posts) {
+      const post = child.data;
+      if (!post) continue;
+
+      const title = (post.title || '').trim();
+      const url = post.url_overridden_by_dest || `https://www.reddit.com${post.permalink}`;
+      const selftext = (post.selftext || '').substring(0, 500);
+      const permalink = `https://www.reddit.com${post.permalink}`;
+      const publishedAt = post.created_utc
+        ? new Date(post.created_utc * 1000).toISOString()
+        : null;
+
+      if (!title) continue;
+
+      // Keyword filtering for general subreddits
+      if (source.filterKeywords) {
+        if (!matchesKeywords(title) && !matchesKeywords(selftext)) {
+          continue;
+        }
+      }
+
+      // Use the Reddit permalink as the canonical URL for dedup
+      // but include the external link in the summary if present
+      const summary = selftext || (post.url_overridden_by_dest ? `Link: ${post.url_overridden_by_dest}` : '');
+
+      articles.push({
+        url: permalink,
+        title: `[Reddit] ${title}`,
+        summary,
+        source: source.name,
+        category: source.category,
+        publishedAt,
+      });
+    }
+  } catch (err) {
+    // Handle Reddit rate limiting (429)
+    if (err.response?.status === 429) {
+      console.error(`[Scanner] Reddit rate limited on ${source.name}. Will retry next scan.`);
+    } else {
+      console.error(`[Scanner] Error scanning ${source.name}: ${err.message}`);
+    }
+    return { articles: [], error: err.message };
+  }
+  return { articles, error: null };
+}
+
+// --- Main Scanner ---
 async function runFullScan() {
   console.log(`[Scanner] Starting full scan at ${new Date().toISOString()}`);
   console.log(`[Scanner] Checking ${SOURCES.length} sources...`);
@@ -65,12 +128,25 @@ async function runFullScan() {
   let sourcesChecked = 0;
   const errors = [];
 
+  // Small delay between Reddit requests to respect rate limits
+  let lastRedditRequest = 0;
+  const REDDIT_DELAY_MS = 2000;
+
   for (const source of SOURCES) {
     let result;
-    if (source.type === 'rss') {
+
+    if (source.type === 'reddit') {
+      // Rate-limit Reddit requests: wait at least 2s between them
+      const elapsed = Date.now() - lastRedditRequest;
+      if (elapsed < REDDIT_DELAY_MS && lastRedditRequest > 0) {
+        await new Promise((r) => setTimeout(r, REDDIT_DELAY_MS - elapsed));
+      }
+      result = await scanRedditSource(source);
+      lastRedditRequest = Date.now();
+    } else if (source.type === 'rss') {
       result = await scanRssSource(source);
     } else {
-      continue; // skip unknown types
+      continue;
     }
 
     sourcesChecked++;
@@ -93,7 +169,7 @@ async function runFullScan() {
 
   console.log(`[Scanner] Scan complete. Checked ${sourcesChecked} sources, found ${totalNew} new articles.`);
   if (errors.length) {
-    console.log(`[Scanner] ${errors.length} errors: ${errorStr}`);
+    console.log(`[Scanner] ${errors.length} errors encountered.`);
   }
 
   return { sourcesChecked, totalNew, errors };
@@ -112,4 +188,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { runFullScan, scanRssSource };
+module.exports = { runFullScan, scanRssSource, scanRedditSource };

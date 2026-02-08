@@ -1,8 +1,342 @@
 // News sources configuration for Indian credit card and points/miles news
-// Each source has a type (rss or scrape), URL, and category
+// Each source has a type (rss, reddit, or twitter), URL, and category
 
 const SOURCES = [
-  // --- Google News RSS feeds (most comprehensive) ---
+  // =============================================
+  // REDDIT (highest priority - breaks news first)
+  // =============================================
+  {
+    name: 'Reddit - r/CreditCardsIndia',
+    type: 'reddit',
+    url: 'https://www.reddit.com/r/CreditCardsIndia/new.json?limit=50',
+    category: 'credit-card',
+  },
+  {
+    name: 'Reddit - r/IndiaInvestments (CC)',
+    type: 'reddit',
+    url: 'https://www.reddit.com/r/IndiaInvestments/new.json?limit=50',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Reddit - r/india (CC)',
+    type: 'reddit',
+    url: 'https://www.reddit.com/r/india/new.json?limit=50',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Reddit - r/CreditCardIndia',
+    type: 'reddit',
+    url: 'https://www.reddit.com/r/CreditCardIndia/new.json?limit=50',
+    category: 'credit-card',
+  },
+  {
+    name: 'Reddit - r/IndianCreditCards',
+    type: 'reddit',
+    url: 'https://www.reddit.com/r/IndianCreditCards/new.json?limit=50',
+    category: 'credit-card',
+  },
+  // Reddit search queries for broader coverage
+  {
+    name: 'Reddit Search - Credit Card India',
+    type: 'reddit',
+    url: 'https://www.reddit.com/search.json?q=credit+card+india&sort=new&limit=25',
+    category: 'credit-card',
+  },
+  {
+    name: 'Reddit Search - HDFC Credit Card',
+    type: 'reddit',
+    url: 'https://www.reddit.com/search.json?q=HDFC+credit+card&sort=new&limit=25',
+    category: 'credit-card',
+  },
+  {
+    name: 'Reddit Search - Points Miles India',
+    type: 'reddit',
+    url: 'https://www.reddit.com/search.json?q=points+miles+india+credit+card&sort=new&limit=25',
+    category: 'points-miles',
+  },
+
+  // =============================================
+  // TWITTER/X (via xcancel.com RSS - Nitter fork)
+  // User-specified accounts + additional CC influencers
+  // =============================================
+  // --- User's hand-picked accounts ---
+  {
+    name: 'Twitter - @CardsavvyIndia',
+    type: 'rss',
+    url: 'https://xcancel.com/CardsavvyIndia/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @ProfessorCardz',
+    type: 'rss',
+    url: 'https://xcancel.com/ProfessorCardz/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @suritalreja',
+    type: 'rss',
+    url: 'https://xcancel.com/suritalreja/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @EvryPaisaMatter',
+    type: 'rss',
+    url: 'https://xcancel.com/EvryPaisaMatter/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @LiveFromALounge',
+    type: 'rss',
+    url: 'https://xcancel.com/LiveFromALounge/rss',
+    category: 'points-miles',
+  },
+  {
+    name: 'Twitter - @CardMavenIn',
+    type: 'rss',
+    url: 'https://xcancel.com/CardMavenIn/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @akshat_money',
+    type: 'rss',
+    url: 'https://xcancel.com/akshat_money/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @imYadav31',
+    type: 'rss',
+    url: 'https://xcancel.com/imYadav31/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @TechnoFino',
+    type: 'rss',
+    url: 'https://xcancel.com/TechnoFino/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @CreditPedia',
+    type: 'rss',
+    url: 'https://xcancel.com/CreditPedia/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @nikravel',
+    type: 'rss',
+    url: 'https://xcancel.com/nikravel/rss',
+    category: 'points-miles',
+  },
+  {
+    name: 'Twitter - @Boopathy_SA',
+    type: 'rss',
+    url: 'https://xcancel.com/Boopathy_SA/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @MagnifyClub',
+    type: 'rss',
+    url: 'https://xcancel.com/MagnifyClub/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @credofly',
+    type: 'rss',
+    url: 'https://xcancel.com/credofly/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @savesage_club',
+    type: 'rss',
+    url: 'https://xcancel.com/savesage_club/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @DoBaniye',
+    type: 'rss',
+    url: 'https://xcancel.com/DoBaniye/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @spendwiselyx',
+    type: 'rss',
+    url: 'https://xcancel.com/spendwiselyx/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @pointperkspicks',
+    type: 'rss',
+    url: 'https://xcancel.com/pointperkspicks/rss',
+    category: 'points-miles',
+  },
+  {
+    name: 'Twitter - @asktarunn',
+    type: 'rss',
+    url: 'https://xcancel.com/asktarunn/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @AmazingCreditC',
+    type: 'rss',
+    url: 'https://xcancel.com/AmazingCreditC/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @milesmintIN',
+    type: 'rss',
+    url: 'https://xcancel.com/milesmintIN/rss',
+    category: 'points-miles',
+  },
+  {
+    name: 'Twitter - @chandrarsrikant',
+    type: 'rss',
+    url: 'https://xcancel.com/chandrarsrikant/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @luxe_explorer',
+    type: 'rss',
+    url: 'https://xcancel.com/luxe_explorer/rss',
+    category: 'points-miles',
+  },
+  // --- Additional CC/points influencers & bloggers ---
+  {
+    name: 'Twitter - @AskTriMan',
+    type: 'rss',
+    url: 'https://xcancel.com/AskTriMan/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @cardinsider',
+    type: 'rss',
+    url: 'https://xcancel.com/cardinsider/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @creditcardz_in',
+    type: 'rss',
+    url: 'https://xcancel.com/creditcardz_in/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @credithelpindia',
+    type: 'rss',
+    url: 'https://xcancel.com/credithelpindia/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @CardExpert_in',
+    type: 'rss',
+    url: 'https://xcancel.com/CardExpert_in/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @SBICard_Connect',
+    type: 'rss',
+    url: 'https://xcancel.com/SBICard_Connect/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @HDFCBank',
+    type: 'rss',
+    url: 'https://xcancel.com/HDFCBank/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Twitter - @ICICIBank',
+    type: 'rss',
+    url: 'https://xcancel.com/ICICIBank/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Twitter - @AxisBank',
+    type: 'rss',
+    url: 'https://xcancel.com/AxisBank/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Twitter - @GetOneCardIN',
+    type: 'rss',
+    url: 'https://xcancel.com/GetOneCardIN/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @AmexIndia',
+    type: 'rss',
+    url: 'https://xcancel.com/AmexIndia/rss',
+    category: 'credit-card',
+  },
+  {
+    name: 'Twitter - @aubank',
+    type: 'rss',
+    url: 'https://xcancel.com/aubank/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Twitter - @IDFCFIRSTBank',
+    type: 'rss',
+    url: 'https://xcancel.com/IDFCFIRSTBank/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Twitter - @IndusInd_Bank',
+    type: 'rss',
+    url: 'https://xcancel.com/IndusInd_Bank/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Twitter - @YesBank',
+    type: 'rss',
+    url: 'https://xcancel.com/YesBank/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Twitter - @KotakBankLtd',
+    type: 'rss',
+    url: 'https://xcancel.com/KotakBankLtd/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Twitter - @RBLBankLtd',
+    type: 'rss',
+    url: 'https://xcancel.com/RBLBankLtd/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Twitter - @FederalBankLtd',
+    type: 'rss',
+    url: 'https://xcancel.com/FederalBankLtd/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Twitter - @RuPay_npci',
+    type: 'rss',
+    url: 'https://xcancel.com/RuPay_npci/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+  {
+    name: 'Twitter - @RBI',
+    type: 'rss',
+    url: 'https://xcancel.com/RBI/rss',
+    category: 'credit-card',
+    filterKeywords: true,
+  },
+
+  // =============================================
+  // GOOGLE NEWS RSS (comprehensive web coverage)
+  // =============================================
   {
     name: 'Google News - Credit Card India',
     type: 'rss',
@@ -76,7 +410,9 @@ const SOURCES = [
     category: 'credit-card',
   },
 
-  // --- Indian Finance / Credit Card Blogs ---
+  // =============================================
+  // INDIAN CC/FINANCE BLOGS (RSS)
+  // =============================================
   {
     name: 'CardExpert',
     type: 'rss',
@@ -96,7 +432,9 @@ const SOURCES = [
     category: 'credit-card',
   },
 
-  // --- Major Indian Finance News ---
+  // =============================================
+  // MAJOR INDIAN FINANCE NEWS (keyword-filtered)
+  // =============================================
   {
     name: 'Moneycontrol - Personal Finance',
     type: 'rss',
@@ -120,7 +458,7 @@ const SOURCES = [
   },
 ];
 
-// Keywords to filter articles from general finance sources
+// Keywords to filter articles from general finance/bank sources
 const FILTER_KEYWORDS = [
   'credit card',
   'creditcard',

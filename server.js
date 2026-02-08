@@ -26,7 +26,7 @@ async function scanAndAlert() {
 }
 
 // --- Dashboard HTML ---
-function renderDashboard(articles, stats, scans, query, filter) {
+function renderDashboard(articles, stats, scans, query, filter, req_src) {
   const categoryColors = {
     'credit-card': '#1a73e8',
     'points-miles': '#e67e22',
@@ -39,15 +39,26 @@ function renderDashboard(articles, stats, scans, query, filter) {
     'finance': 'Finance',
   };
 
+  // Detect source platform from source name
+  function getSourcePlatform(sourceName) {
+    if (sourceName.startsWith('Reddit')) return { label: 'Reddit', color: '#ff4500', icon: 'R' };
+    if (sourceName.startsWith('Twitter')) return { label: 'Twitter', color: '#1da1f2', icon: 'X' };
+    if (sourceName.startsWith('Google News')) return { label: 'News', color: '#4285f4', icon: 'G' };
+    if (['CardExpert', 'LiveFromALounge', 'CardInfo'].includes(sourceName)) return { label: 'Blog', color: '#9c27b0', icon: 'B' };
+    return { label: 'News', color: '#666', icon: 'N' };
+  }
+
   const articleCards = articles.map((a) => {
     const color = categoryColors[a.category] || '#666';
     const label = categoryLabels[a.category] || a.category;
+    const platform = getSourcePlatform(a.source);
     const timeAgo = a.discovered_at ? formatDistanceToNow(new Date(a.discovered_at + 'Z'), { addSuffix: true }) : '';
     const pubDate = a.published_at ? format(new Date(a.published_at), 'dd MMM yyyy') : '';
 
     return `
       <div class="card">
         <div class="card-header">
+          <span class="platform-badge" style="background:${platform.color}">${platform.label}</span>
           <span class="badge" style="background:${color}">${label}</span>
           <span class="source">${a.source}</span>
           <span class="time">${timeAgo}</span>
@@ -56,7 +67,7 @@ function renderDashboard(articles, stats, scans, query, filter) {
         ${a.summary ? `<p class="card-summary">${a.summary.substring(0, 250)}${a.summary.length > 250 ? '...' : ''}</p>` : ''}
         <div class="card-footer">
           ${pubDate ? `<span>Published: ${pubDate}</span>` : ''}
-          ${a.emailed ? '<span class="emailed">✉ Emailed</span>' : ''}
+          ${a.emailed ? '<span class="emailed">&#9993; Emailed</span>' : ''}
         </div>
       </div>`;
   }).join('');
@@ -171,6 +182,14 @@ function renderDashboard(articles, stats, scans, query, filter) {
       margin-bottom: 8px;
       flex-wrap: wrap;
     }
+    .platform-badge {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: 0.5px;
+    }
     .badge {
       padding: 3px 10px;
       border-radius: 12px;
@@ -261,7 +280,9 @@ function renderDashboard(articles, stats, scans, query, filter) {
       </form>
       <a href="/?filter=credit-card" class="btn btn-filter ${filter === 'credit-card' ? 'active' : ''}">Credit Cards</a>
       <a href="/?filter=points-miles" class="btn btn-filter ${filter === 'points-miles' ? 'active' : ''}">Points & Miles</a>
-      <a href="/" class="btn btn-filter ${!filter ? 'active' : ''}">All</a>
+      <a href="/?src=twitter" class="btn btn-filter ${req_src === 'twitter' ? 'active' : ''}" style="border-color:#1da1f2">Twitter</a>
+      <a href="/?src=reddit" class="btn btn-filter ${req_src === 'reddit' ? 'active' : ''}" style="border-color:#ff4500">Reddit</a>
+      <a href="/" class="btn btn-filter ${!filter && !req_src ? 'active' : ''}">All</a>
       <a href="/scan" class="btn btn-scan">Scan Now</a>
     </div>
   </div>
@@ -303,6 +324,7 @@ function renderDashboard(articles, stats, scans, query, filter) {
 app.get('/', (req, res) => {
   const query = req.query.q || '';
   const filter = req.query.filter || '';
+  const src = req.query.src || '';
 
   let articles;
   if (query) {
@@ -315,9 +337,15 @@ app.get('/', (req, res) => {
     articles = articles.filter((a) => a.category === filter);
   }
 
+  if (src === 'twitter') {
+    articles = articles.filter((a) => a.source.startsWith('Twitter'));
+  } else if (src === 'reddit') {
+    articles = articles.filter((a) => a.source.startsWith('Reddit'));
+  }
+
   const stats = db.getSourceStats();
   const scans = db.getRecentScans(10);
-  res.send(renderDashboard(articles, stats, scans, query, filter));
+  res.send(renderDashboard(articles, stats, scans, query, filter, src));
 });
 
 app.get('/scan', async (req, res) => {
