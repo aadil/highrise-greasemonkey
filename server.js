@@ -649,13 +649,10 @@ app.listen(PORT, () => {
   console.log(`  GET /api/suggestions - Get reel suggestions`);
   console.log(`  GET /scan         - Trigger scan`);
 
-  // Run initial scan on startup
+  // Run initial scan on startup, then always generate fresh AI ideas
   console.log('[Server] Running initial scan...');
   scanAndAlert().then(() => {
-    // Generate AI suggestions after first scan completes (if none exist)
-    if (db.getSuggestionCount() === 0) {
-      console.log('[Server] No suggestions in DB — running initial AI generation...');
-      runAiGeneration();
-    }
+    console.log('[Server] Scan complete — running AI generation for fresh ideas...');
+    runAiGeneration();
   });
 });
